@@ -93,7 +93,7 @@ def crazytime(call, sections):
 
 def check_bonus_winners(db_path, game, x):
     if game == 'crazy':
-        
+        pass
 
 @bot.message_handler(commands=['start'])
 def start(message):
