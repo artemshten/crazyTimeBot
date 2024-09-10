@@ -4,7 +4,9 @@ import sqlite3
 
 bot = telebot.TeleBot('7317210656:AAHuyea1QvClrObvrEeqHnPB-QGBJzbXFO8')
 is_game_active = False
+is_bonus_active = False
 results = ['1','2','5','10','coin','cash','pach','crazy']
+games = ['coin','cash','pach','crazy']
 coin = ['2','2','2','2','2','3','3','3','3','5','5','5','5','10','10','10','25','25','25','50','50','100']
 cash_emoji = ['🐇','🎯','🎁','⭐️','🍎','🧁']
 cash = ['5','5','5','5','5','5','5','5','5','5','7','7','7','7','7','7','7','7','7','7','10','10','10','10','10','15','15','15','15','15','15','20','20','20','20','20','50','50','50','50','100','100','100']
@@ -62,7 +64,7 @@ def check_winners(db_path, result):
         return win_message
     else:
         conn.close()
-        return 'In work'
+        return 'In work.'
 
 def makecrazytime(message):
     markup = types.InlineKeyboardMarkup()
@@ -73,14 +75,25 @@ def makecrazytime(message):
     bot.send_message(message.chat.id, 'Select the number of sections on the wheel.', reply_markup=markup)
 
 def crazytime(call, sections):
-    global g
+    group = call.message.chat.id
     if sections == 3:
-        pass
+        bot.send_message(group, f'Spin the wheel! Available X: 10, 25, 50.')
     elif sections == 4:
-        pass
+        bot.send_message(group, f'Spin the wheel! Available X: 10, 20, 25, 50.')
     elif sections == 6:
-        pass
+        bot.send_message(group, f'Spin the wheel! Available X: 10, 20, 25, 50, 100, DOUBLE.')
+        '''
+        markup = types.InlineKeyboardMarkup()
+        button1 = types.InlineKeyboardButton('Left 🟢', callback_data='left')
+        button2 = types.InlineKeyboardButton('Center 🔵', callback_data='center')
+        button3 = types.InlineKeyboardButton('Right 🟡', callback_data='right')
+        markup.add(button1,button2,button3)
+        bot.send_message(group, 'Choose your color!', reply_markup=markup)
+        '''
 
+def check_bonus_winners(db_path, game, x):
+    if game == 'crazy':
+        
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -127,9 +140,9 @@ def bet(message):
                 except Exception as e:
                     bot.reply_to(message, 'The value must be a number.')
             else:
-                bot.reply_to(message, 'Available bets: 1, 2, 5, 10,\ncoin, cash, pach, crazy')
+                bot.reply_to(message, 'Available bets: 1, 2, 5, 10,\ncoin, cash, pach, crazy.')
         except IndexError:
-            bot.reply_to(message, 'Usage: /bet <amount> <result>')
+            bot.reply_to(message, 'Usage: /bet <amount> <result>.')
     else:
         bot.reply_to(message, 'Bets are closed.')
 
@@ -140,7 +153,7 @@ def start_game(message):
         is_game_active = True
         bot.send_message(message.chat.id, 'Bets are closed. We are spinning the wheel!')
     else:
-        bot.reply_to(message, 'There is already an active game')
+        bot.reply_to(message, 'There is already an active game.')
 
 @bot.message_handler(commands=['end_game'])
 def end_game(message):
@@ -153,8 +166,8 @@ def end_game(message):
                 winners = check_winners('database.db', result)
                 bot.send_message(message.chat.id, winners)
                 if winners == "IT'S A CRAAAZY TIME!!!":
-                    global g
-                    g = message.chat.id
+                    global is_bonus_active
+                    is_bonus_active = True
                     makecrazytime(message)
                 else:
                     conn = sqlite3.connect('database.db')
@@ -163,20 +176,52 @@ def end_game(message):
                     conn.commit()
                     conn.close()
             else:
-                bot.reply_to(message, 'There is no active game')
+                bot.reply_to(message, 'There is no active game.')
         else:
-            bot.reply_to(message, 'Available results: 1, 2, 5, 10,\ncoin, cash, pach, crazy')
+            bot.reply_to(message, 'Available results: 1, 2, 5, 10,\ncoin, cash, pach, crazy.')
     except IndexError:
-        bot.reply_to(message, 'Usage: /end_game <result>')
+        bot.reply_to(message, 'Usage: /end_game <result>.')
+
+@bot.message_handler(commands=['end_bonus'])
+def end_bonus(message):
+    global is_bonus_active
+    if is_bonus_active == True:
+        try:
+            game = message.text.split()[1]
+            x = message.text.split()[2]
+            if game in games:
+                if game == 'crazy':
+                    if x in crazy_6:
+                        winners = check_bonus_winners('database.db', 'crazy', x)
+                        bot.send_message(message.chat.id, winners)
+                    else:
+                        bot.send_message(message.chat.id, 'Available X: 10, 20, 25, 50, 100, DOUBLE.')
+                else:
+                    bot.send_message(message.chat.id, 'In work.')
+            else:
+                bot.send_message(message.chat.id, 'Available games: coin, cash, pach, crazy')
+        except Exception as e:
+            bot.send_message(message.chat.id, 'Usage: /end_bonus <bonus_game> <x>.')
+    else:
+        bot.send_message(message.chat.id, 'There is no active bonus game.')
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     if call.data == '3':
+        bot.delete_message(call.message.chat.id, call.message.message_id)
         crazytime(call, 3)
     elif call.data == '4':
+        bot.delete_message(call.message.chat.id, call.message.message_id)
         crazytime(call, 4)
     elif call.data == '6':
+        bot.delete_message(call.message.chat.id, call.message.message_id)
         crazytime(call, 6)
+    elif call.data == 'left':
+        pass
+    elif call.data == 'center':
+        pass
+    elif call.data == 'right':
+        pass
 
 
 bot.polling(none_stop=True)
