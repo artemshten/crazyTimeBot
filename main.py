@@ -93,7 +93,22 @@ def crazytime(call, sections):
 
 def check_bonus_winners(db_path, game, x):
     if game == 'crazy':
-        pass
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, amount, username FROM game WHERE result = ?", (game,))
+        winners = cursor.fetchall()
+        win_message = f'The result of the crazy time is {x}X\nCongratulations to all the winners!\n\nWinners:\n'
+        for i in winners:
+            ids = i[0]
+            win = i[1] * (x+1)
+            username = i[2]
+            win_message += f'@{username}: {win}\n'
+            cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (win, ids))
+            conn.commit()
+        cursor.execute('DROP TABLE game')
+        conn.commit()
+        conn.close()
+        return win_message
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -192,6 +207,7 @@ def end_bonus(message):
             if game in games:
                 if game == 'crazy':
                     if x in crazy_6:
+                        x = int(x)
                         winners = check_bonus_winners('database.db', 'crazy', x)
                         bot.send_message(message.chat.id, winners)
                     else:
