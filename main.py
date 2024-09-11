@@ -110,6 +110,16 @@ def check_bonus_winners(db_path, game, x):
         conn.close()
         return win_message
 
+def active_bets(db_path):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='game';")
+    table_exists = cursor.fetchone()
+    if table_exists:
+        return True
+    else:
+        return False
+
 @bot.message_handler(commands=['start'])
 def start(message):
     add_to_db('database.db', message.from_user.id)
@@ -118,7 +128,7 @@ def start(message):
 @bot.message_handler(commands=['help'])
 def help(message):
     add_to_db('database.db', message.from_user.id)
-    bot.send_message(message.chat.id, "Available commands:\n/bet <amount> <result>\n/start_game\n/end_game <result>\n/balance")
+    bot.send_message(message.chat.id, "Available commands:\n/bet <amount> <result>\n/start_game\n/end_game <result>\n/end_bonus <game> <x>\n/balance")
 
 @bot.message_handler(commands=['balance'])
 def balance(message):
@@ -164,13 +174,17 @@ def bet(message):
 
 @bot.message_handler(commands=['start_game'])
 def start_game(message):
+    active_bets1 = active_bets('database.db')
     add_to_db('database.db', message.from_user.id)
     global is_game_active
-    if is_game_active == False:
-        is_game_active = True
-        bot.send_message(message.chat.id, 'Bets are closed. We are spinning the wheel!')
+    if active_bets1 == True:
+        if is_game_active == False:
+            is_game_active = True
+            bot.send_message(message.chat.id, 'Bets are closed. We are spinning the wheel!')
+        else:
+            bot.reply_to(message, 'There is already an active game.')
     else:
-        bot.reply_to(message, 'There is already an active game.')
+        bot.reply_to(message, "There aren't any bets.")
 
 @bot.message_handler(commands=['end_game'])
 def end_game(message):
