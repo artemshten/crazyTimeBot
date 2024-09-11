@@ -128,6 +128,7 @@ def balance(message):
 
 @bot.message_handler(commands=['bet'])
 def bet(message):
+    add_to_db('database.db', message.from_user.id)
     global is_game_active
     if is_game_active == False:
         try:
@@ -163,6 +164,7 @@ def bet(message):
 
 @bot.message_handler(commands=['start_game'])
 def start_game(message):
+    add_to_db('database.db', message.from_user.id)
     global is_game_active
     if is_game_active == False:
         is_game_active = True
@@ -172,6 +174,7 @@ def start_game(message):
 
 @bot.message_handler(commands=['end_game'])
 def end_game(message):
+    add_to_db('database.db', message.from_user.id)
     global is_game_active
     try:
         result = message.text.split()[1]
@@ -199,6 +202,7 @@ def end_game(message):
 
 @bot.message_handler(commands=['end_bonus'])
 def end_bonus(message):
+    add_to_db('database.db', message.from_user.id)
     global is_bonus_active
     if is_bonus_active == True:
         try:
