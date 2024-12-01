@@ -115,24 +115,34 @@ def crazytime(call, sections):
 
 def coinflip(call, randomly):
     group = call.message.chat.id
-    mes = bot.send_message(group, f'Multipliers for coin flip are...')
-    time.sleep(3)
-    bot.delete_message(group, mes.id)
+    mes = bot.send_message(group, f'Multipliers for coin flip are.')
+    time.sleep(1)
+    bot.edit_message_text(chat_id=group, message_id=mes.message_id, text=f'Multipliers for coin flip are..')
+    time.sleep(1)
+    bot.edit_message_text(chat_id=group, message_id=mes.message_id, text=f'Multipliers for coin flip are...')
+    time.sleep(1)
+    bot.edit_message_text(chat_id=group, message_id=mes.message_id, text=f'Multipliers for coin flip are....')
+    time.sleep(1)
     red = random.choice(coin)
     blue = random.choice(coin)
     while blue == red:
         blue = random.choice(coin)
-    bot.send_message(group, f'Red 🔴: {red}\n\nBlue 🔵: {blue}')
+    bot.edit_message_text(chat_id=group, message_id=mes.message_id, text=f'Multipliers for coin flip are:\nRed 🔴: {red}x\n\nBlue 🔵: {blue}x')
     if randomly == True:
-        time.sleep(2)
-        mes = bot.send_message(group, 'The result of coin flip is...')
-        time.sleep(2)
-        lst2 = [red, blue]
-        result = random.choice(lst2)
-        bot.edit_message_text(group, mes.id, f'The result of coin flip is {result}')
+        time.sleep(3)
+        mes = bot.send_message(group, 'The result of coin flip is.')
         time.sleep(1)
+        bot.edit_message_text(chat_id=group, message_id=mes.message_id, text=f'The result of coin flip is..')
+        time.sleep(1)
+        bot.edit_message_text(chat_id=group, message_id=mes.message_id, text=f'The result of coin flip is...')
+        time.sleep(1)
+        bot.edit_message_text(chat_id=group, message_id=mes.message_id, text=f'The result of coin flip is....')
+        time.sleep(1)
+        lst2 = [f'red 🔴: {red}x', f'blue 🔵: {blue}x']
+        result = random.choice(lst2)
+        bot.edit_message_text(chat_id=group, message_id=mes.message_id, text=f'The result of coin flip is {result}')
     elif randomly == False:
-        time.sleep(2)
+        time.sleep(3)
         mes = bot.send_message(group, 'You can flip a coin')
 
 def check_bonus_winners(db_path, game, x):
