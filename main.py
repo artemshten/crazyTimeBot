@@ -252,6 +252,7 @@ def add_balance(message):
 def end_game(message):
     add_to_db('database.db', message.from_user.id)
     global is_game_active
+    global is_bonus_active
     try:
         result = message.text.split()[1]
         if result in results:
@@ -260,11 +261,9 @@ def end_game(message):
                 winners = check_winners('database.db', result)
                 bot.send_message(message.chat.id, winners)
                 if winners == "IT'S A CRAAAZY TIME!!!":
-                    global is_bonus_active
                     is_bonus_active = True
                     makecrazytime(message)
-                if winners == "It`s a coin flip.":
-                    global is_bonus_active
+                elif winners == "It`s a coin flip.":
                     is_bonus_active = True
                     makecoinflip(message)
                 else:
