@@ -1,7 +1,10 @@
 import telebot
 from telebot import types
 import sqlite3
+import time
+import random
 
+admin = [5360268210]
 bot = telebot.TeleBot('7317210656:AAHuyea1QvClrObvrEeqHnPB-QGBJzbXFO8')
 is_game_active = False
 is_bonus_active = False
@@ -41,6 +44,14 @@ def make_bet(db_path, id, amount):
     conn.commit()
     conn.close()
 
+def add_balance1(db_path, id, amount):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (amount, id))
+    conn.commit()
+    conn.close()
+    return f'Successfully given {amount} to this user.'
+
 def check_winners(db_path, result):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -62,6 +73,10 @@ def check_winners(db_path, result):
         conn.close()
         win_message = "IT'S A CRAAAZY TIME!!!"
         return win_message
+    elif result == 'coin':
+        conn.close()
+        win_message = "It`s a coin flip."
+        return win_message
     else:
         conn.close()
         return 'In work.'
@@ -73,6 +88,13 @@ def makecrazytime(message):
     button3 = types.InlineKeyboardButton('6', callback_data='6')
     markup.add(button1, button2, button3)
     bot.send_message(message.chat.id, 'Select the number of sections on the wheel.', reply_markup=markup)
+
+def makecoinflip(message):
+    markup = types.InlineKeyboardMarkup()
+    button1 = types.InlineKeyboardButton('Yes', callback_data='coin_yes')
+    button2 = types.InlineKeyboardButton('No', callback_data='coin_no')
+    markup.add(button1, button2)
+    bot.send_message(message.chat.id, 'Do you want to pick color randomly?', reply_markup=markup)
 
 def crazytime(call, sections):
     group = call.message.chat.id
@@ -91,24 +113,45 @@ def crazytime(call, sections):
         bot.send_message(group, 'Choose your color!', reply_markup=markup)
         '''
 
+def coinflip(call, randomly):
+    group = call.message.chat.id
+    mes = bot.send_message(group, f'Multipliers for coin flip are...')
+    time.sleep(3)
+    bot.delete_message(group, mes.id)
+    red = random.choice(coin)
+    blue = random.choice(coin)
+    while blue == red:
+        blue = random.choice(coin)
+    bot.send_message(group, f'Red 🔴: {red}\n\nBlue 🔵: {blue}')
+    if randomly == True:
+        time.sleep(2)
+        mes = bot.send_message(group, 'The result of coin flip is...')
+        time.sleep(2)
+        lst2 = [red, blue]
+        result = random.choice(lst2)
+        bot.edit_message_text(group, mes.id, f'The result of coin flip is {result}')
+        time.sleep(1)
+    elif randomly == False:
+        time.sleep(2)
+        mes = bot.send_message(group, 'You can flip a coin')
+
 def check_bonus_winners(db_path, game, x):
-    if game == 'crazy':
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, amount, username FROM game WHERE result = ?", (game,))
-        winners = cursor.fetchall()
-        win_message = f'The result of the crazy time is {x}X\nCongratulations to all the winners!\n\nWinners:\n'
-        for i in winners:
-            ids = i[0]
-            win = i[1] * (x+1)
-            username = i[2]
-            win_message += f'@{username}: {win}\n'
-            cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (win, ids))
-            conn.commit()
-        cursor.execute('DROP TABLE game')
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, amount, username FROM game WHERE result = ?", (game,))
+    winners = cursor.fetchall()
+    win_message = f'The result of the bonus game is {x}X\nCongratulations to all the winners!\n\nWinners:\n'
+    for i in winners:
+        ids = i[0]
+        win = i[1] * (x+1)
+        username = i[2]
+        win_message += f'@{username}: {win}\n'
+        cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (win, ids))
         conn.commit()
-        conn.close()
-        return win_message
+    cursor.execute('DROP TABLE game')
+    conn.commit()
+    conn.close()
+    return win_message
 
 def active_bets(db_path):
     conn = sqlite3.connect(db_path)
@@ -154,16 +197,15 @@ def bet(message):
                                    "username TEXT,"
                                    "amount NUMERIC NOT NULL,"
                                    "result TEXT NOT NULL)")
-                    conn.commit()
-                    if check_balance('database.db', message.from_user.id) >= int(amount):
+                    if check_balance('database.db', message.from_user.id) >= amount:
                         cursor.execute("INSERT INTO game (id, username, amount, result) VALUES (?,?,?,?)",
                                        (message.from_user.id, message.from_user.username, amount, result))
                         conn.commit()
                         bot.reply_to(message, f'The bet has been successfully placed.\nAmount: {amount}\nResult: {result}')
                         make_bet('database.db', message.from_user.id, amount)
-                    if check_balance('database.db', message.from_user.id) < int(amount):
+                    elif check_balance('database.db', message.from_user.id) < amount:
                         bot.reply_to(message, 'Insufficient balance.')
-                except Exception as e:
+                except ValueError:
                     bot.reply_to(message, 'The value must be a number.')
             else:
                 bot.reply_to(message, 'Available bets: 1, 2, 5, 10,\ncoin, cash, pach, crazy.')
@@ -186,6 +228,26 @@ def start_game(message):
     else:
         bot.reply_to(message, "There aren't any bets.")
 
+@bot.message_handler(commands=['add_balance'])
+def add_balance(message):
+    add_to_db('database.db', message.from_user.id)
+    if message.from_user.id in admin:
+        try:
+            amount = message.text.split()[1]
+            try:
+                amount = int(amount)
+                try:
+                    a = add_balance1('database.db', message.reply_to_message.from_user.id, amount)
+                    bot.reply_to(message, a)
+                except Exception as e:
+                    bot.reply_to(message, 'You need to reply the user.')
+            except ValueError:
+                bot.reply_to(message, 'The value must be a number.')
+        except IndexError:
+            bot.reply_to(message, 'Usage: /add_balance <amount>. (reply to user)')
+    else:
+        bot.reply_to(message, 'Insufficient permissions.')
+
 @bot.message_handler(commands=['end_game'])
 def end_game(message):
     add_to_db('database.db', message.from_user.id)
@@ -201,6 +263,10 @@ def end_game(message):
                     global is_bonus_active
                     is_bonus_active = True
                     makecrazytime(message)
+                if winners == "It`s a coin flip.":
+                    global is_bonus_active
+                    is_bonus_active = True
+                    makecoinflip(message)
                 else:
                     conn = sqlite3.connect('database.db')
                     cursor = conn.cursor()
@@ -230,6 +296,13 @@ def end_bonus(message):
                         bot.send_message(message.chat.id, winners)
                     else:
                         bot.send_message(message.chat.id, 'Available X: 10, 20, 25, 50, 100, DOUBLE.')
+                elif game == 'coin':
+                    if x in coin:
+                        x = int(x)
+                        winners = check_bonus_winners('database.db', 'coin', x)
+                        bot.send_message(message.chat.id, winners)
+                    else:
+                        bot.send_message(message.chat.id, 'Available X: 2, 3, 5, 10, 25, 50, 100')
                 else:
                     bot.send_message(message.chat.id, 'In work.')
             else:
@@ -256,6 +329,11 @@ def callback_query(call):
         pass
     elif call.data == 'right':
         pass
-
+    elif call.data == 'coin_yes':
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        coinflip(call, True)
+    elif call.data == 'coin_no':
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        coinflip(call, False)
 
 bot.polling(none_stop=True)
