@@ -6,7 +6,7 @@ import random
 
 admin = [5360268210]
 bot = telebot.TeleBot('7317210656:AAHuyea1QvClrObvrEeqHnPB-QGBJzbXFO8')
-is_game_active = True
+is_game_active = False
 is_bonus_active = False
 results = ['1','2','5','10','coin','cash','pach','crazy']
 games = ['coin','cash','pach','crazy']
