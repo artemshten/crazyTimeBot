@@ -13,6 +13,8 @@ games = ['coin','cash','pach','crazy']
 coin = ['2','2','2','2','2','2','2','3','3','3','3','3','3','5','5','5','5','5','10','10','10','10','25','25','25','50','50','100']
 cash_emoji = ['🐇','🎯','🎁','⭐️','🍎','🧁']
 cash = ['5','5','5','5','5','5','5','5','5','5','7','7','7','7','7','7','7','7','7','7','10','10','10','10','10','15','15','15','15','15','15','20','20','20','20','20','50','50','50','50','100','100','100']
+topslot_x = ['1','1','1','1','1','1','1','1','1','1','1','2','2','2','2','2','2','2','2','3','3','3','3','3','3','3','5','5','5','5','5','5','10','10','10','10','10','10','25','25','25','50','50']
+topslot_games = ['1','1','1','1','1','1','1','1','1','2','2','2','2','2','2','2','2','5','5','5','5','5','5','5','10','10','10','10','10','Coin Flip','Coin Flip','Coin Flip','Coin Flip','Pachinko','Pachinko','Pachinko','Pachinko','Cash Hunt','Cash Hunt','Cash Hunt','Cash Hunt','Crazy Time','Crazy Time']
 crazy_3 = ['10','25','50']
 crazy_4 = ['10','20','25','50']
 crazy_6 = ['10','20','25','50','100','double']
@@ -44,6 +46,15 @@ def make_bet(db_path, id, amount):
     cursor.execute("UPDATE users SET balance = balance - ? WHERE id = ?", (amount, id))
     conn.commit()
     conn.close()
+
+def topslot_choose(chat_id):
+    x = random.choice(topslot_x)
+    result = random.choice(topslot_games)
+    mes = bot.send_message(chat_id, '<b>TOPSLOT</b>\n', parse_mode='html')
+    time.sleep(1)
+    bot.edit_message_text(chat_id=chat_id, message_id=mes.message_id, text=f'<b>TOPSLOT</b>\n{result} - ', parse_mode='html')
+    time.sleep(1)
+    bot.edit_message_text(chat_id=chat_id, message_id=mes.message_id, text=f'<b>TOPSLOT</b>\n{result} - {x}x', parse_mode='html')
 
 def add_balance1(db_path, id, amount):
     conn = sqlite3.connect(db_path)
@@ -265,6 +276,8 @@ def start_game(message):
         if is_game_active == False:
             is_game_active = True
             bot.send_message(message.chat.id, 'Bets are closed. We are spinning the wheel!')
+            time.sleep(1)
+            topslot_choose(message.chat.id)
         else:
             bot.reply_to(message, 'There is already an active game.')
     else:
