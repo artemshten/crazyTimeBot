@@ -55,6 +55,8 @@ def topslot_choose(chat_id):
     bot.edit_message_text(chat_id=chat_id, message_id=mes.message_id, text=f'<b>TOPSLOT</b>\n{result} - ', parse_mode='html')
     time.sleep(1)
     bot.edit_message_text(chat_id=chat_id, message_id=mes.message_id, text=f'<b>TOPSLOT</b>\n{result} - {x}x', parse_mode='html')
+    with open('topslot.txt', 'w') as f:
+        f.write(f'{result};{x}')
 
 def add_balance1(db_path, id, amount):
     conn = sqlite3.connect(db_path)
@@ -69,18 +71,35 @@ def check_winners(db_path, result):
     cursor = conn.cursor()
     cursor.execute("SELECT id, amount, username FROM game WHERE result = ?", (result,))
     winners = cursor.fetchall()
+    with open('topslot.txt', 'r') as f:
+        file = f.read()
+        game = file.split(';')[0]
+        x = file.split(';')[1]
     if result == '1' or result == '2' or result == '5' or result == '10':
-        result = int(result)+1
-        win_message = f'The result of the game is {result-1}\nCongratulations to all the winners!\n\nWinners:\n'
-        for i in winners:
-            ids = i[0]
-            win = i[1]*result
-            username = i[2]
-            win_message += f'@{username}: {win}\n'
-            cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?",(win, ids))
-            conn.commit()
-        conn.close()
-        return win_message
+        if game == result:
+            result2 = int(result) * int(x) + 1
+            win_message = f'TOPSLOT WIN!\nThe result of the game is {result} x {x}\nCongratulations to all the winners!\n\nWinners:\n'
+            for i in winners:
+                ids = i[0]
+                win = i[1]*result2
+                username = i[2]
+                win_message += f'@{username}: {win}\n'
+                cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?",(win, ids))
+                conn.commit()
+            conn.close()
+            return win_message
+        else:
+            result = int(result)+1
+            win_message = f'The result of the game is {result-1}\nCongratulations to all the winners!\n\nWinners:\n'
+            for i in winners:
+                ids = i[0]
+                win = i[1]*result
+                username = i[2]
+                win_message += f'@{username}: {win}\n'
+                cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?",(win, ids))
+                conn.commit()
+            conn.close()
+            return win_message
     elif result == 'crazy':
         conn.close()
         win_message = "IT'S A CRAAAZY TIME!!!"
@@ -186,14 +205,32 @@ def check_bonus_winners(db_path, game, x):
     cursor = conn.cursor()
     cursor.execute("SELECT id, amount, username FROM game WHERE result = ?", (game,))
     winners = cursor.fetchall()
-    win_message = f'The result of the bonus game is {x}X\nCongratulations to all the winners!\n\nWinners:\n'
-    for i in winners:
-        ids = i[0]
-        win = i[1] * (x+1)
-        username = i[2]
-        win_message += f'@{username}: {win}\n'
-        cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (win, ids))
-        conn.commit()
+    with open('topslot.txt', 'r') as f:
+        file = f.read()
+        game2 = file.split(';')[0]
+        x2 = file.split(';')[1]
+    if 'Crazy' in game2: game2 = 'crazy'
+    elif 'Coin' in game2: game2 = 'coin'
+    elif 'Pachinko' in game2: game2 = 'pach'
+    elif 'Cash' in game2: game2 = 'cash'
+    if game == game2:
+        win_message = f'TOPSLOT BONUS WIN!!!\nThe result of the bonus game is {x} x {x2}\nCongratulations to all the winners!\n\nWinners:\n'
+        for i in winners:
+            ids = i[0]
+            win = i[1] * (x * int(x2) + 1)
+            username = i[2]
+            win_message += f'@{username}: {win}\n'
+            cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (win, ids))
+            conn.commit()
+    else:
+        win_message = f'The result of the bonus game is {x}X\nCongratulations to all the winners!\n\nWinners:\n'
+        for i in winners:
+            ids = i[0]
+            win = i[1] * (x+1)
+            username = i[2]
+            win_message += f'@{username}: {win}\n'
+            cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (win, ids))
+            conn.commit()
     cursor.execute('DROP TABLE game')
     conn.commit()
     conn.close()
