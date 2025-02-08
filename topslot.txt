@@ -1,1 +1,1 @@
-Coin Flip;10
+Crazy Time;5
